@@ -1,5 +1,7 @@
 import os
 import sys
+#sys.path.insert(0, '/data/git/nomad-lab-1.1.5/')
+sys.path.insert(0, '/data/git/nomad-FAIR/')
 from nomad.client.processing import parse
 
 root = os.path.dirname(os.path.dirname(__file__))
@@ -14,7 +16,7 @@ class UploadMaker:
         self.template_archive_json_file = ''
 
     
-    def parse_outcars(self, thedir:str):
+    def parse_outcar(self, thedir:str):
         OUTCARS = glob.glob(thedir+'/OUTCAR*')
         archive = parse(OUTCARS[0], parser_name = 'parsers/vasp')
         return archive

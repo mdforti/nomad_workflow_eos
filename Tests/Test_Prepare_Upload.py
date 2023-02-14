@@ -24,8 +24,8 @@ class TestPrepareUploads(unittest.TestCase):
 
     def test_makes_anarchive(self):
         firstdir = os.path.dirname(self.uploader.volume_energy_files[0])
-        anarchive = self.uploader.parse_outcars(firstdir)
-        print(anarchive[0].workflow[0].type )
+        archives = self.uploader.parse_outcar(firstdir)
+        print(archives[0].workflow[0].type )
     
 
 
