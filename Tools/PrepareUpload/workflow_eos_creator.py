@@ -26,11 +26,14 @@ from nomad.datamodel.metainfo.workflow import (
     EquationOfState,
     EOSFit
 )
-#from nomad.datamodel.metainfo.workflow import Workflow
-from nomad.normalizing.workflow import Workflow
+#from nomad.datamodel.metainfo.workflow2 import Workflow
+from nomad.datamodel.metainfo.workflow import Workflow
+#from nomad.normalizing.workflow import Workflow
 
 import numpy as np
 import pdb
+
+from ase.eos import EquationOfState as ASE_EOS
 
 def parse_outcar(theoutcar:str) -> EntryArchive:
     archives = parse(theoutcar)
@@ -50,10 +53,12 @@ def create_eos_workflow(OUTCAR_dir):
         volumes=list_of_volumes,
         energies=list_of_energies
     )
+    BM = ASE_EOS([ v*1e30 for v in list_of_volumes ],[e*6.24e18 for e in  list_of_energies ], eos='birchmurnaghan')
+    v0, e0, B = BM.fit()
     eos_fit = equation_of_state.m_create(EOSFit)
     eos_fit.function_name = 'murnaghan'
     eos_fit.fitted_energies = list_of_energies
-    eos_fit.bulk_modulus = 10000
+    eos_fit.bulk_modulus = B*1e24
     workflow.equation_of_state = equation_of_state
     return run_normalize(templates[0])
 
