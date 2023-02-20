@@ -26,7 +26,8 @@ from nomad.datamodel.metainfo.workflow import (
     EquationOfState,
     EOSFit
 )
-from nomad.datamodel.metainfo.workflow2 import Workflow
+#from nomad.datamodel.metainfo.workflow import Workflow
+from nomad.normalizing.workflow import Workflow
 
 import numpy as np
 import pdb
