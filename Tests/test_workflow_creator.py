@@ -29,7 +29,7 @@ class TestPrepareUploads(unittest.TestCase):
     def test_create_eos_workflow(self):
         archive = create_eos_workflow(outcars_dir)
         with open(os.path.join(outcars_dir, 'test_archive.json'), 'w') as f:
-                json.dump(archive.m_to_dict(), f)
+            json.dump(archive.m_to_dict(), f)
 
 
 

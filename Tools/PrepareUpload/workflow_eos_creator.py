@@ -43,7 +43,8 @@ def create_eos_workflow(OUTCAR_dir):
     """Entry with mechanical properties."""
 
     OUTCARS = glob.glob(OUTCAR_dir+'/OUTCAR*')
-    list_of_volumes, list_of_energies = get_energies_from_list_outcars(OUTCARS)
+    list_of_archives = [parse_outcar(thisoutcar) for thisoutcar in OUTCARS]
+    list_of_volumes, list_of_energies = get_energies_from_list_outcars(list_of_archives)
     min_energy_pos = np.argmin(list_of_energies) 
     templates = parse_outcar(OUTCARS[min_energy_pos])
     workflow = templates[0].m_create(Workflow)
@@ -58,12 +59,13 @@ def create_eos_workflow(OUTCAR_dir):
     eos_fit = equation_of_state.m_create(EOSFit)
     eos_fit.function_name = 'murnaghan'
     eos_fit.fitted_energies = list_of_energies
-    eos_fit.bulk_modulus = B*1e24
+    eos_fit.bulk_modulus = B
     workflow.equation_of_state = equation_of_state
+    workflow.calculations_ref = [archive[0].run[0].calculation[0] for archive in list_of_archives]
     return run_normalize(templates[0])
 
-def get_energies_from_list_outcars(list_of_outcars):
-    list_of_archives = [parse_outcar(thisoutcar) for thisoutcar in list_of_outcars]
+def get_energies_from_list_outcars(list_of_archives):
+#    list_of_archives = [parse_outcar(thisoutcar) for thisoutcar in list_of_outcars]
     list_of_energies = [archives[0].run[0].calculation[0].energy.total.value._magnitude for archives in list_of_archives]
 #    list_of_lattice_vectors = [archives[0].run[0].system[0].atoms.lattice_vectors for archives in list_of_archives]
     list_of_volumes = [archives[0].results.properties.structures.structure_original.cell_volume._magnitude for archives in list_of_archives]
