@@ -1,7 +1,12 @@
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-sys.path.insert(1, '/data/git/nomad/')
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import socket
+hostname = socket.gethostname()
+if 'aberdeen'  in hostname.lower():
+    sys.path.insert(1, '/scratch/git/nomad/')
+elif 'laptop'  in hostname.lower():
+    sys.path.insert(1, '/data/git/nomad/')
 
 from nomad.client.processing import parse
 from nomad.datamodel import EntryArchive, EntryMetadata
