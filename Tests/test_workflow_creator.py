@@ -4,6 +4,12 @@ import json
 import os
 project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
+import socket
+hostname = socket.gethostname()
+if 'aberdeen'  in hostname.lower():
+    sys.path.insert(1, '/scratch/git/nomad/')
+elif 'laptop'  in hostname.lower():
+    sys.path.insert(1, '/data/git/nomad/')
 sys.path.insert(1, '/data/git/nomad/')
 
 from nomad.client import parse, normalize_all
