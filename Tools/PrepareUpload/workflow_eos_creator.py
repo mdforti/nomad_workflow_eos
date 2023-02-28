@@ -66,11 +66,9 @@ def make_reference_strings(list_of_outcars : list) -> list:
     """
     takes a list of OUTCAR paths and build the list of calculation_reference for nomad workflow
     """
-    list_of_references = [os.path.basename(outcar)+'#/run/calculation/0' for outcar in list_of_outcars]
-#    for outcar_path in list_of_outcars:
-#        outcar_name = os.path.basename(outcar_path)
-#        this_reference = f'../uploads/archive/mainfile/{outcar_name}#/run/calculation/0'
-#        list_of_references.append(this_reference)
+    #../uploads/archive/mainfile/
+    ##/run/calculation/0
+    list_of_references = ['../uploads/archive/mainfile/'+os.path.basename(outcar)+'#/run/calculation/0' for outcar in list_of_outcars]
     return list_of_references
 
 
@@ -85,8 +83,10 @@ def create_eos_workflow(OUTCAR_dir) -> EntryArchive:
     # EOS workflow
     workflow.type = 'equation_of_state'
     workflow.equation_of_state = make_eos_from_ev_curve(list_of_volumes, list_of_energies)
-    workflow.calculations_ref = make_reference_strings(OUTCARS) # [archive[0].run[0].calculation[0] for archive in list_of_archives]
-    return run_normalize(templates[0])
+    normalized_workflow = run_normalize(templates[0])
+    archive_dict = templates[0].m_to_dict()
+    archive_dict['workflow'][-1]['calculations_ref'] = make_reference_strings(OUTCARS) # [archive[0].run[0].calculation[0] for archive in list_of_archives]
+    return archive_dict
 
 def get_energies_from_list_outcars(list_of_archives) -> list:
     list_of_energies = [archives[0].run[0].calculation[0].energy.total.value._magnitude for archives in list_of_archives]
