@@ -72,9 +72,7 @@ def create_eos_workflow(OUTCAR_dir) -> EntryArchive:
     return run_normalize(templates[0])
 
 def get_energies_from_list_outcars(list_of_archives) -> list:
-#    list_of_archives = [parse_outcar(thisoutcar) for thisoutcar in list_of_outcars]
     list_of_energies = [archives[0].run[0].calculation[0].energy.total.value._magnitude for archives in list_of_archives]
-#    list_of_lattice_vectors = [archives[0].run[0].system[0].atoms.lattice_vectors for archives in list_of_archives]
     list_of_volumes = [archives[0].results.properties.structures.structure_original.cell_volume._magnitude for archives in list_of_archives]
     return  list_of_volumes, list_of_energies
 
