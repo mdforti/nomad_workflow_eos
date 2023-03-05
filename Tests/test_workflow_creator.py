@@ -33,7 +33,7 @@ class TestPrepareUploads(unittest.TestCase):
         self.assertTrue(len(volumes) > 0)
 
     def test_create_eos_workflow(self):
-        archive_dict = create_eos_workflow(outcars_dir)
+        archive_dict = create_eos_workflow(outcars_dir, structure_name = 'R')
         with open(os.path.join(outcars_dir, 'test_archive.json'), 'w') as f:
             json.dump(archive_dict, f)
 

@@ -40,13 +40,27 @@ import pdb
 
 from ase.eos import EquationOfState as ASE_EOS
 
-def parse_outcar(theoutcar:str) -> EntryArchive:
-    archives = parse(theoutcar)
-    return [run_normalize(archive) for archive in archives]
+from nomad.datamodel.results import Symmetry
+import json
 
-def get_template_from_min_energy(list_of_outcars, list_of_energies):
+def parse_outcar(theoutcar:str, prototype_structure = None) -> EntryArchive:
+    archives = parse(theoutcar)
+    normalized_archives = [run_normalize(archive) for archive in archives]
+    for i, normalized_archive in enumerate(normalized_archives):
+#        symmetry = normalized_archive.results.material.symmetry.m_to_dict()
+        normalized_archive.results.material.symmetry.m_update_from_dict({'structure_name': prototype_structure})
+        normalized_archive.metadata.m_update_from_dict({'quantities':[ 'results.material.symmetry.structure_name' ]})
+        this_dict = normalized_archive.m_to_dict()
+        filename = theoutcar+f'_{i:d}_archive.json'
+        with open(filename, 'w') as f:
+            json.dump(this_dict, f)
+#    normalized_archives[0].results.material.structre_name='R'
+    
+    return normalized_archives
+
+def get_template_from_min_energy(list_of_outcars, list_of_energies, prototype_structure = None):
     min_energy_pos = np.argmin(list_of_energies) 
-    return parse_outcar(list_of_outcars[min_energy_pos])
+    return parse_outcar(list_of_outcars[min_energy_pos] , prototype_structure = prototype_structure)
 
 def make_eos_from_ev_curve(thevolumes : list, theenergies: list) -> EquationOfState:
     equation_of_state = EquationOfState(
@@ -59,7 +73,7 @@ def make_eos_from_ev_curve(thevolumes : list, theenergies: list) -> EquationOfSt
     eos_fit = equation_of_state.m_create(EOSFit)
     eos_fit.function_name = 'murnaghan'
     eos_fit.fitted_energies = theenergies
-    eos_fit.bulk_modulus = B
+    eos_fit.bulk_modulus = B*1e9
     return equation_of_state
 
 def make_reference_strings(list_of_outcars : list) -> list:
@@ -73,10 +87,10 @@ def make_reference_strings(list_of_outcars : list) -> list:
 
 
 
-def create_eos_workflow(OUTCAR_dir) -> EntryArchive:
+def create_eos_workflow(OUTCAR_dir : str, structure_name : str = None) -> EntryArchive:
     """Entry with mechanical properties."""
     OUTCARS = glob.glob(OUTCAR_dir+'/OUTCAR*')
-    list_of_archives = [parse_outcar(thisoutcar) for thisoutcar in OUTCARS]
+    list_of_archives = [parse_outcar(thisoutcar, prototype_structure = structure_name) for thisoutcar in OUTCARS]
     list_of_volumes, list_of_energies = get_energies_from_list_outcars(list_of_archives)
     templates = get_template_from_min_energy(OUTCARS, list_of_energies)
     workflow = templates[0].m_create(Workflow)
