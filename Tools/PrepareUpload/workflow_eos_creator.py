@@ -60,7 +60,10 @@ def parse_outcar(theoutcar:str, prototype_structure = None) -> EntryArchive:
 
 def get_template_from_min_energy(list_of_outcars, list_of_energies, prototype_structure = None):
     min_energy_pos = np.argmin(list_of_energies) 
-    return parse_outcar(list_of_outcars[min_energy_pos] , prototype_structure = prototype_structure)
+    template_archive = parse_outcar(list_of_outcars[min_energy_pos] , prototype_structure = prototype_structure)
+    template_archive[0].results.material.symmetry.m_update_from_dict({ 'structure_name': prototype_structure })
+    template_archive[0].metadata.m_update_from_dict({'quantities':[ 'results.material.symmetry.structure_name' ]})
+    return template_archive
 
 def make_eos_from_ev_curve(thevolumes : list, theenergies: list) -> EquationOfState:
     equation_of_state = EquationOfState(
