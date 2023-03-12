@@ -93,7 +93,7 @@ def make_reference_strings(list_of_outcars : list) -> list:
 def create_eos_workflow(OUTCAR_dir : str, structure_name : str = None) -> EntryArchive:
     """Entry with mechanical properties."""
     OUTCARS = glob.glob(OUTCAR_dir+'/OUTCAR*')
-    list_of_archives = [parse_outcar(thisoutcar, prototype_structure = structure_name) for thisoutcar in OUTCARS]
+    list_of_archives = [parse_outcar(thisoutcar, prototype_structure = structure_name) for thisoutcar in OUTCARS if 'json' not in thisoutcar]
     list_of_volumes, list_of_energies = get_energies_from_list_outcars(list_of_archives)
     templates = get_template_from_min_energy(OUTCARS, list_of_energies)
     workflow = templates[0].m_create(Workflow)
@@ -115,5 +115,4 @@ def run_normalize(entry_archive: EntryArchive) -> EntryArchive:
         normalizer = normalizer_class(entry_archive)
         normalizer.normalize()
     return entry_archive
-
 
