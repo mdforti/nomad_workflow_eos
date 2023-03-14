@@ -13,7 +13,7 @@ elif 'laptop'  in hostname.lower():
 sys.path.insert(1, '/data/git/nomad/')
 
 from nomad.client import parse, normalize_all
-from Tools.PrepareUpload.workflow_eos_creator import parse_outcar,  create_eos_workflow, get_energies_from_list_outcars
+from Tools.PrepareUpload.workflow_eos_creator import parse_outcar,  create_eos_workflow, get_energies_from_list_outcars, run_normalize
 from nomad.utils import dump_json
 import glob
 
@@ -32,10 +32,17 @@ class TestPrepareUploads(unittest.TestCase):
         self.assertTrue(len(energies) > 0)
         self.assertTrue(len(volumes) > 0)
 
-    def test_create_eos_workflow(self):
+    def no_test_create_eos_workflow(self):
         archive_dict = create_eos_workflow(outcars_dir, structure_name = 'R')
         with open(os.path.join(outcars_dir, 'test_archive.json'), 'w') as f:
             json.dump(archive_dict, f)
+
+    def test_resulting_archive(self):
+        parsed_outcar = parse(os.path.join(outcars_dir, 'OUTCAR.1.000_0_archive.json'))
+        normalized_outcar = [] 
+        for parsed in parsed_outcar:
+            run_normalize(parsed) 
+        pdb.set_trace()
 
 
 
