@@ -37,12 +37,11 @@ class TestPrepareUploads(unittest.TestCase):
         with open(os.path.join(outcars_dir, 'test_archive.json'), 'w') as f:
             json.dump(archive_dict, f)
 
-    def test_resulting_archive(self):
-        parsed_outcar = parse(os.path.join(outcars_dir, 'OUTCAR.1.000_0_archive.json'))
-        normalized_outcar = [] 
-        for parsed in parsed_outcar:
-            run_normalize(parsed) 
-        pdb.set_trace()
+#    def test_resulting_archive(self):
+#        parsed_outcar = parse(os.path.join(outcars_dir, 'OUTCAR.1.000_0_archive.json'))
+#        normalized_outcar = [] 
+#        for parsed in parsed_outcar:
+#            run_normalize(parsed) 
 
 
 
