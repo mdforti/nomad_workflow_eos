@@ -76,7 +76,7 @@ def make_eos_from_ev_curve(thevolumes : list, theenergies: list) -> EquationOfSt
     eos_fit = equation_of_state.m_create(EOSFit)
     eos_fit.function_name = 'murnaghan'
     eos_fit.fitted_energies = theenergies
-    eos_fit.bulk_modulus = B*1e9
+    eos_fit.bulk_modulus = B
     return equation_of_state
 
 def make_reference_strings(list_of_outcars : list) -> list:
