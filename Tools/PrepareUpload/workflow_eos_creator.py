@@ -32,7 +32,8 @@ from nomad.datamodel.metainfo.workflow import (
     EOSFit
 )
 #from nomad.datamodel.metainfo.workflow2 import Workflow
-from nomad.datamodel.metainfo.workflow import Workflow
+from nomad.datamodel.metainfo.workflow2 import Workflow
+
 #from nomad.normalizing.workflow import Workflow
 
 import numpy as np
@@ -102,7 +103,20 @@ def create_eos_workflow(OUTCAR_dir : str, structure_name : str = None) -> EntryA
     workflow.equation_of_state = make_eos_from_ev_curve(list_of_volumes, list_of_energies)
     normalized_workflow = run_normalize(templates[0])
     archive_dict = templates[0].m_to_dict()
-    archive_dict['workflow'][-1]['calculations_ref'] = make_reference_strings(OUTCARS) # [archive[0].run[0].calculation[0] for archive in list_of_archives]
+    list_of_reference_strings = make_reference_strings(OUTCARS) # [archive[0].run[0].calculation[0] for archive in list_of_archives]
+    archive_dict['workflow'][-1]['calculations_ref'] = list_of_reference_strings 
+    archive_dict['workflow2']={}
+    archive_dict['workflow2']['name'] =  'equation of state'
+    archive_dict['workflow2']['inputs'] = [
+            {'name': 'input_structure',
+             'section' : '../uploads/archive/mainfile/'+OUTCARS[0]+'#/run/system/0'}
+            ] 
+#    archive_dict['workflow2']['outputs'] = [
+#            {'name': 'workflow_output',
+#             'section' : '#/workflow2/results'}] 
+#    archive_dict['workflow2']['tasks'] = [
+#            {'name': f'single_point_{i}',
+#             'task' : '../uploads/archive/mainfile/'+this_outcar+'#/workflow2'} for i, this_outcar in enumerate(OUTCARS)] 
     return archive_dict
 
 def get_energies_from_list_outcars(list_of_archives) -> list:

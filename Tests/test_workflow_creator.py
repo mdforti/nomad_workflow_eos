@@ -12,10 +12,10 @@ elif 'laptop'  in hostname.lower():
     sys.path.insert(1, '/data/git/nomad/')
 sys.path.insert(1, '/data/git/nomad/')
 
-from nomad.client import parse, normalize_all
-from Tools.PrepareUpload.workflow_eos_creator import parse_outcar,  create_eos_workflow, get_energies_from_list_outcars, run_normalize
-from nomad.utils import dump_json
-import glob
+#from nomad.client import parse, normalize_all
+#from Tools.PrepareUpload.workflow_eos_creator import parse_outcar,  create_eos_workflow, get_energies_from_list_outcars, run_normalize
+#from nomad.utils import dump_json
+#import glob
 
 first_outcar = 'ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/OUTCAR.1.000'
 outcars_dir = os.path.dirname(first_outcar)
@@ -53,5 +53,20 @@ class TestPrepareUploads(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    #    unittest.main()
+    import glob
+    with open('ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/test_archive.json', 'r')  as f:
+        archive = json.load(f)
+    OUTCARS = glob.glob('ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/OUTCAR*[0,5]')
+    basenames_OUTCARS = [ os.path.basename(outcar) for outcar in OUTCARS]
 
+    print(basenames_OUTCARS)
+
+    archive['workflow2']= {
+            'name': 'EOS workflow',
+            'inputs' : [{'name': 'input structure', 'section' : '../upload/archive/mainfile/'+basenames_OUTCARS[0]+'#/run/system/0'}],
+            'outputs' : [{'name': 'workflow result', 'section' : '/workflow2/results'}],
+            'tasks' : [{'name': f'workflow task {i}', 'section' : f'../upload/archive/mainfile/{basename}#/workflow2' } for i, basename in enumerate(basenames_OUTCARS)]
+            }
+    with open('ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/test_indent_archive.json', 'w')  as f:
+        json.dump(archive,  f, indent = 4)
