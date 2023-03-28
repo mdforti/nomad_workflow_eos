@@ -18,26 +18,19 @@ from nomad.datamodel.metainfo.simulation.run import Run, Program
 import glob 
 from nomad.units import ureg
 from nomad.datamodel.metainfo.workflow import (
-    DiffusionConstantValues,
-    IntegrationParameters,
-    MeanSquaredDisplacement,
-    MeanSquaredDisplacementValues,
-    MolecularDynamicsResults,
-    RadialDistributionFunction,
-    RadialDistributionFunctionValues,
     GeometryOptimization,
-    Elastic,
-    MolecularDynamics,
     EquationOfState,
     EOSFit
 )
-#from nomad.datamodel.metainfo.workflow2 import Workflow
-from nomad.datamodel.metainfo.workflow2 import Workflow
+from nomad.datamodel.metainfo.workflow  import Workflow
+from nomad.datamodel.metainfo.workflow2  import Workflow as Workflow2
+#from nomad.datamodel.metainfo.workflow import Workflow
 
 #from nomad.normalizing.workflow import Workflow
 
 import numpy as np
 import pdb
+import shutil
 
 from ase.eos import EquationOfState as ASE_EOS
 
@@ -47,14 +40,14 @@ import json
 def parse_outcar(theoutcar:str, prototype_structure = None) -> EntryArchive:
     archives = parse(theoutcar)
     normalized_archives = [run_normalize(archive) for archive in archives]
-    for i, normalized_archive in enumerate(normalized_archives):
-#        symmetry = normalized_archive.results.material.symmetry.m_to_dict()
-        normalized_archive.results.material.symmetry.m_update_from_dict({'structure_name': prototype_structure})
-        normalized_archive.metadata.m_update_from_dict({'quantities':[ 'results.material.symmetry.structure_name' ]})
-        this_dict = normalized_archive.m_to_dict()
-        filename = theoutcar+f'_{i:d}_archive.json'
-        with open(filename, 'w') as f:
-            json.dump(this_dict, f)
+#    for i, normalized_archive in enumerate(normalized_archives):
+##        symmetry = normalized_archive.results.material.symmetry.m_to_dict()
+#        #normalized_archive.results.material.symmetry.m_update_from_dict({'structure_name': prototype_structure})
+#        #normalized_archive.metadata.m_update_from_dict({'quantities':[ 'results.material.symmetry.structure_name' ]})
+#        this_dict = normalized_archive.m_to_dict()
+#        filename = theoutcar+f'_{i:d}_archive.json'
+#        with open(filename, 'w') as f:
+#            json.dump(this_dict, f, indent=4)
 #    normalized_archives[0].results.material.structre_name='R'
     
     return normalized_archives
@@ -70,7 +63,7 @@ def make_eos_from_ev_curve(thevolumes : list, theenergies: list) -> EquationOfSt
     equation_of_state = EquationOfState(
         volumes=thevolumes,
         energies=theenergies
-    )
+        )
     # numbers are unit conversion
     BM = ASE_EOS([ v *1e30  for v in thevolumes ],[ e * 6.241509e+18 for e in  theenergies ], eos='birchmurnaghan')
     v0, e0, B = BM.fit()
@@ -86,37 +79,69 @@ def make_reference_strings(list_of_outcars : list) -> list:
     """
     #../uploads/archive/mainfile/
     ##/run/calculation/0
-    list_of_references = ['../uploads/archive/mainfile/'+os.path.basename(outcar)+'#/run/calculation/0' for outcar in list_of_outcars]
+    list_of_references = ['../upload/archive/mainfile/'+os.path.basename(outcar)+'#/run/calculation/0' for outcar in list_of_outcars]
     return list_of_references
 
+def get_input_outcar(OUTCAR_dir: str) -> str:
+    RLX_OUTCAR_DIR  = os.path.dirname(  os.path.dirname(OUTCAR_dir) )
+    RLX_OUTCAR = glob.glob(os.path.join(RLX_OUTCAR_DIR,'relax', '**', 'OUTCAR*'))
+    for outcar in RLX_OUTCAR:
+        if outcar.endswith('.gz') :
+            wait = os.popen(f'gunzip --keep  -f {outcar}').read()
+            outcar = outcar[:-3]
+    RLX_OUTCAR = [outcar for outcar in sorted( RLX_OUTCAR ) if not outcar.endswith('gz')]
+    return RLX_OUTCAR
 
 
 def create_eos_workflow(OUTCAR_dir : str, structure_name : str = None) -> EntryArchive:
     """Entry with mechanical properties."""
-    OUTCARS = glob.glob(OUTCAR_dir+'/OUTCAR*')
-    list_of_archives = [parse_outcar(thisoutcar, prototype_structure = structure_name) for thisoutcar in OUTCARS if 'json' not in thisoutcar]
+    OUTCARS = glob.glob(OUTCAR_dir+'/OUTCAR*[5,0]')
+    OUTCARS = [thisfile for thisfile in OUTCARS if not thisfile.endswith('json')]
+    OUTCAR_BASENAMES = [os.path.basename(thisoutcar) for thisoutcar in OUTCARS]
+    RLX_OUTCAR = get_input_outcar(OUTCAR_dir)
+    for i, outcarrlx in enumerate( RLX_OUTCAR ):
+        if not outcarrlx.endswith('gz'):
+            shutil.copyfile(outcarrlx, os.path.dirname(OUTCARS[0])+f'/OUTCAR-{i}-RLX')
+    list_of_archives = [] 
+    for thisoutcar in OUTCARS: 
+        if thisoutcar.endswith('json'):
+            continue
+        print(thisoutcar)
+        list_of_archives.append(parse_outcar(thisoutcar)) #, prototype_structure = structure_name) )
     list_of_volumes, list_of_energies = get_energies_from_list_outcars(list_of_archives)
-    templates = get_template_from_min_energy(OUTCARS, list_of_energies)
-    workflow = templates[0].m_create(Workflow)
+    templates = EntryArchive() #get_template_from_min_energy(OUTCARS, list_of_energies)
+    workflow = templates.m_create(Workflow)
+    templates.m_create(Workflow2)
     # EOS workflow
+    templates.workflow2.name = "Full Optimization"
     workflow.type = 'equation_of_state'
     workflow.equation_of_state = make_eos_from_ev_curve(list_of_volumes, list_of_energies)
-    normalized_workflow = run_normalize(templates[0])
-    archive_dict = templates[0].m_to_dict()
+   # normalized_workflow = run_normalize(templates)
+    archive_dict = templates.m_to_dict()
     list_of_reference_strings = make_reference_strings(OUTCARS) # [archive[0].run[0].calculation[0] for archive in list_of_archives]
-    archive_dict['workflow'][-1]['calculations_ref'] = list_of_reference_strings 
-    archive_dict['workflow2']={}
-    archive_dict['workflow2']['name'] =  'equation of state'
-    archive_dict['workflow2']['inputs'] = [
-            {'name': 'input_structure',
-             'section' : '../uploads/archive/mainfile/'+OUTCARS[0]+'#/run/system/0'}
-            ] 
+    archive_dict['workflow'][-1]['calculations_ref'] = list_of_reference_strings
+#    archive_dict['workflow2']['name'] =  'Full Optimization'
+#    archive_dict['workflow2']['inputs'] = [
+#            {'name': 'input_structure',
+#             'section' : f'../upload/archive/mainfile/OUTCAR-{i}-RLX#/workflow2/tasks/-1/outputs/1'}
+#            for i, outcar in enumerate(RLX_OUTCAR)
+#            ] 
 #    archive_dict['workflow2']['outputs'] = [
 #            {'name': 'workflow_output',
-#             'section' : '#/workflow2/results'}] 
-#    archive_dict['workflow2']['tasks'] = [
-#            {'name': f'single_point_{i}',
-#             'task' : '../uploads/archive/mainfile/'+this_outcar+'#/workflow2'} for i, this_outcar in enumerate(OUTCARS)] 
+#             'section' : '#/workflow/0/equation_of_state/equation_of_state/eos_fit'}] 
+    archive_dict['workflow2']['tasks'] = [
+            {'name': f'point_{i}', 
+                'inputs' : [{'name': 'Optimized Structure', 'section': '../upload/archive/mainfile/OUTCAR-0-RLX#/workflow2/tasks/-1/outputs/1'}],
+                'outputs' : [{'name': f'strained_{i}', 'section': f'../upload/archive/mainfile/{thisoutcar}#/workflow2/tasks/0/outputs/0'}]
+            }
+            for i, thisoutcar in enumerate(OUTCAR_BASENAMES)
+            ] 
+    archive_dict['workflow2']['tasks'] += [{
+        'name': 'ev_curve', 
+        'inputs': [{'name' : f'strained_{i}', 'section': f'../upload/archive/mainfile/{thisoutcar}#/workflow2/tasks/0/outputs/0'}
+            for i, thisoutcar  in enumerate(OUTCAR_BASENAMES)], 
+        'outputs' : [{'name': 'fitted ev curve', 'section' : '#/workflow/0/equation_of_state/eos_fit'}]
+        }]
     return archive_dict
 
 def get_energies_from_list_outcars(list_of_archives) -> list:
