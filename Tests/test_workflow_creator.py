@@ -18,8 +18,8 @@ from Tools.PrepareUpload.workflow_eos_creator import parse_outcar,  create_eos_w
 from nomad.utils import dump_json
 import glob
 
-#first_outcar = 'ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/OUTCAR.1.000'
-first_outcar = 'ExampleUpload/Fe_BCC.FM/bcc.FM/volume_relaxed/xc=PBE-PAW.E=500.dk=0.020/OUTCAR.0.95' 
+first_outcar = 'ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/OUTCAR.1.000'
+#first_outcar = 'ExampleUpload/Fe_BCC.FM/bcc.FM/volume_relaxed/xc=PBE-PAW.E=500.dk=0.020/OUTCAR.0.95' 
 outcars_dir = os.path.dirname(first_outcar)
 import unittest
 
@@ -48,22 +48,22 @@ class TestPrepareUploads(unittest.TestCase):
 #        for parsed in parsed_outcar:
 #            run_normalize(parsed) 
 
-def inject_workflow():
-    with open('ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/test_archive.json', 'r')  as f:
-        archive = json.load(f)
-    OUTCARS = glob.glob('ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/OUTCAR*[0,5]')
-    basenames_OUTCARS = [ os.path.basename(outcar) for outcar in OUTCARS]
-
-    print(basenames_OUTCARS)
-
-    archive['workflow2']= {
-            'name': 'EOS workflow',
-            'inputs' : [{'name': 'input structure', 'section' : '../upload/archive/mainfile/'+basenames_OUTCARS[0]+'#/run/system/0'}],
-            'outputs' : [{'name': 'workflow result', 'section' : '/workflow2/results'}],
-            'tasks' : [{'name': f'workflow task {i}', 'section' : f'../upload/archive/mainfile/{basename}#/workflow2' } for i, basename in enumerate(basenames_OUTCARS)]
-            }
-    with open('ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/test_indent_archive.json', 'w')  as f:
-        json.dump(archive,  f, indent = 4)
+#def inject_workflow():
+#    with open('ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/test_archive.json', 'r')  as f:
+#        archive = json.load(f)
+#    OUTCARS = glob.glob('ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/OUTCAR*[0,5]')
+#    basenames_OUTCARS = [ os.path.basename(outcar) for outcar in OUTCARS]
+#
+#    print(basenames_OUTCARS)
+#
+#    archive['workflow2']= {
+#            'name': 'EOS workflow',
+#            'inputs' : [{'name': 'input structure', 'section' : '../upload/archive/mainfile/'+basenames_OUTCARS[0]+'#/run/system/0'}],
+#            'outputs' : [{'name': 'workflow result', 'section' : '/workflow2/results'}],
+#            'tasks' : [{'name': f'workflow task {i}', 'section' : f'../upload/archive/mainfile/{basename}/#' } for i, basename in enumerate(basenames_OUTCARS)]
+#            }
+#    with open('ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/test_indent_archive.json', 'w')  as f:
+#        json.dump(archive,  f, indent = 4)
 
 if __name__ == '__main__':
     unittest.main()
