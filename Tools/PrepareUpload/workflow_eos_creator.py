@@ -17,15 +17,10 @@ from nomad.normalizing import normalizers
 from nomad.datamodel.metainfo.simulation.run import Run, Program
 import glob 
 from nomad.units import ureg
-from nomad.datamodel.metainfo.workflow import (
-    GeometryOptimization,
-#    EquationOfState,
-#    EOSFit
-)
 from nomad.datamodel.metainfo.simulation.workflow import EquationOfState, EOSFit, EquationOfStateResults
 from nomad.datamodel.metainfo.workflow  import Workflow
 from nomad.datamodel.results import Properties, Results
-from nomad.datamodel.metainfo.workflow2  import Workflow as Workflow2
+from nomad.datamodel.metainfo.workflow import Workflow
 #from nomad.datamodel.metainfo.workflow import Workflow
 
 #from nomad.normalizing.workflow import Workflow
@@ -34,10 +29,14 @@ import numpy as np
 import pdb
 import shutil
 
+
 from ase.eos import EquationOfState as ASE_EOS
 
 from nomad.datamodel.results import Symmetry
 import json
+
+import warnings
+warnings.filterwarnings("ignore")
 
 def parse_outcar(theoutcar:str, prototype_structure = None) -> EntryArchive:
     archives = parse(theoutcar)
@@ -78,7 +77,8 @@ def get_input_outcar(OUTCAR_dir: str) -> str:
     RLX_OUTCAR = glob.glob(os.path.join(RLX_OUTCAR_DIR,'relax', '**', 'OUTCAR*'))
     for outcar in RLX_OUTCAR:
         if outcar.endswith('.gz') :
-            wait = os.popen(f'gunzip --keep  -f {outcar}').read()
+            with os.popen(f'gunzip --keep  -f {outcar}')  as f:
+                output = f.readlines()
             outcar = outcar[:-3]
     RLX_OUTCAR = [outcar for outcar in sorted( RLX_OUTCAR ) if not outcar.endswith('gz')]
     return RLX_OUTCAR

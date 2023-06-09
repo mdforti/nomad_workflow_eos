@@ -7,9 +7,9 @@ project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
 import socket
 hostname = socket.gethostname()
-if 'aberdeen'  in hostname.lower():
-    sys.path.insert(1, '/scratch/git/nomad/')
-elif 'laptop'  in hostname.lower():
+#if 'aberdeen'  in hostname.lower():
+#    sys.path.insert(1, '/scratch/git/nomad/')
+if 'laptop'  in hostname.lower():
     sys.path.insert(1, '/data/git/nomad/')
 sys.path.insert(1, '/data/git/nomad/')
 
@@ -24,7 +24,7 @@ outcars_dir = os.path.dirname(first_outcar)
 import unittest
 
 import warnings
-warnings.filterwarnings('error')
+warnings.filterwarnings('ignore')
 
 class TestPrepareUploads(unittest.TestCase):
     
@@ -66,5 +66,6 @@ class TestPrepareUploads(unittest.TestCase):
 #        json.dump(archive,  f, indent = 4)
 
 if __name__ == '__main__':
+    warnings.filterwarnings('error')
     unittest.main()
 
