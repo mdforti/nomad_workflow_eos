@@ -20,7 +20,6 @@ from nomad.units import ureg
 from nomad.datamodel.metainfo.simulation.workflow import EquationOfState, EOSFit, EquationOfStateResults
 from nomad.datamodel.metainfo.workflow  import Workflow
 from nomad.datamodel.results import Properties, Results
-from nomad.datamodel.metainfo.workflow import Workflow
 #from nomad.datamodel.metainfo.workflow import Workflow
 
 #from nomad.normalizing.workflow import Workflow
@@ -105,43 +104,39 @@ def create_eos_workflow(OUTCAR_dir : str, structure_name : str = None) -> EntryA
 #    templates = EntryArchive() #
     templates = get_template_from_min_energy(OUTCARS, list_of_energies)[0]
 #    templates.workflow = []
-#    workflow = templates.m_create(Workflow)
+    workflow = templates.m_create(Workflow)
     # EOS workflow
-#    workflow.type = 'equation_of_state'
+    workflow.type = 'equation_of_state'
 #    workflow.equation_of_state = make_eos_from_ev_curve(list_of_volumes, list_of_energies)
-    templates.workflow2 = make_eos_from_ev_curve(list_of_volumes, list_of_energies)#EquationOfState()
-#    templates.m_create(Workflow2)
-#    templates.workflow2.name = "Full Optimization"
-#    templates.workflow2.equation_of_state = make_eos_from_ev_curve(list_of_volumes, list_of_energies)
-    pdb.set_trace()
+    templates.workflow2 = EquationOfState()#make_eos_from_ev_curve(list_of_volumes, list_of_energies)
+    templates.workflow2.results = EquationOfStateResults(energies=list_of_energies, volumes = list_of_volumes)
 #    normalized_workflow = run_normalize(templates)
     archive_dict = templates.m_to_dict()
-#    list_of_reference_strings = make_reference_strings(OUTCARS) # [archive[0].run[0].calculation[0] for archive in list_of_archives]
-#    archive_dict['workflow'][-1]['calculations_ref'] = list_of_reference_strings
-#    archive_dict['workflow2']['tasks'] = [
-#            {'name': f'point_{i}', 
-##                'inputs' : [{'name': 'Optimized Structure', 'section': '#/workflow2/inputs/0'}],
-#                'inputs' : [ {'name': 'Optimized Structure', 'section' : f'../upload/archive/mainfile/OUTCAR-0-RLX#/workflow2/tasks/{last_rlx_task}/outputs/1' } ], 
-##                'inputs' : [ {'name': 'Optimized Structure', 'section' : '../upload/archive/mainfile/OUTCAR-0-RLX#/run/0/calculation/-1/system_ref'} ], 
-#                'outputs' : [{'name': f'strained_{i}', 'section': f'../upload/archive/mainfile/{thisoutcar}#/run/0/calculation/'}] #/workflow2/tasks/0/outputs/0'}]
-#            }
-#            for i, thisoutcar in enumerate(OUTCAR_BASENAMES)
-#            ] 
-#    archive_dict['workflow2']['tasks'] += [{
-#        'name': 'ev_curve', 
-#        'inputs': [{'name' : f'strained_{i}', 'section': f'../upload/archive/mainfile/{thisoutcar}#/run/0/calculation/'}  #/workflow2/tasks/0/outputs/0'}
-#            for i, thisoutcar  in enumerate(OUTCAR_BASENAMES)], 
-#        'outputs' : [{'name': 'fitted ev curve', 'section' : '#/workflow2/outputs/0'}]
-#        }]
-##    archive_dict['workflow2']['inputs'] =[ {'name': 'Optimized Structure', 'section' : '../upload/archive/mainfile/OUTCAR-0-RLX#/run/0/calculation/-1/system_ref'} ], 
-#    archive_dict['workflow2']['inputs'] = [{'name': 'Optimized Structure', 'section' : f'../upload/archive/mainfile/OUTCAR-0-RLX#/workflow2/tasks/{last_rlx_task}/outputs/1' }]
-#
-#    archive_dict['workflow2']['outputs'] = [{'name': 'eos_fit', 'section' : '#/workflow/equation_of_state/eos_fit/0/' }]
+    list_of_reference_strings = make_reference_strings(OUTCARS) # [archive[0].run[0].calculation[0] for archive in list_of_archives]
+    pdb.set_trace()
+    archive_dict['workflow2'][-1]['calculations_ref'] = list_of_reference_strings
+    archive_dict['workflow2']['tasks'] = [
+            {'name': f'point_{i}', 
+                'inputs' : [ {'name': 'Optimized Structure', 'section' : f'../upload/archive/mainfile/OUTCAR-0-RLX#/workflow2/tasks/{last_rlx_task}/outputs/1' } ], 
+                'outputs' : [{'name': f'strained_{i}', 'section': f'../upload/archive/mainfile/{thisoutcar}#/run/0/calculation/'}] #/workflow2/tasks/0/outputs/0'}]
+            }
+            for i, thisoutcar in enumerate(OUTCAR_BASENAMES)
+            ] 
+    archive_dict['workflow2']['tasks'] += [{
+        'name': 'ev_curve', 
+        'inputs': [{'name' : f'strained_{i}', 'section': f'../upload/archive/mainfile/{thisoutcar}#/run/0/calculation/'}  #/workflow2/tasks/0/outputs/0'}
+            for i, thisoutcar  in enumerate(OUTCAR_BASENAMES)], 
+        'outputs' : [{'name': 'fitted ev curve', 'section' : '#/workflow2/outputs/0'}]
+        }]
+#    archive_dict['workflow2']['inputs'] =[ {'name': 'Optimized Structure', 'section' : '../upload/archive/mainfile/OUTCAR-0-RLX#/run/0/calculation/-1/system_ref'} ], 
+    archive_dict['workflow2']['inputs'] = [{'name': 'Optimized Structure', 'section' : f'../upload/archive/mainfile/OUTCAR-0-RLX#/workflow2/tasks/{last_rlx_task}/outputs/1' }]
+
+    archive_dict['workflow2']['outputs'] = [{'name': 'eos_fit', 'section' : '#/workflow/equation_of_state/eos_fit/0/' }]
     return archive_dict
 
 def get_energies_from_list_outcars(list_of_archives) -> list:
     list_of_energies = [archives[0].run[0].calculation[0].energy.total.value._magnitude for archives in list_of_archives]
-    list_of_volumes = [archives[0].results.properties.structures.structure_original.cell_volume._magnitude for archives in list_of_archives]
+    list_of_volumes = [archives[0].results.material.topology[0].cell.volume._magnitude for archives in list_of_archives]
     return  list_of_volumes, list_of_energies
 
 def run_normalize(entry_archive: EntryArchive) -> EntryArchive:

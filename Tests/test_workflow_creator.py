@@ -9,9 +9,9 @@ import socket
 hostname = socket.gethostname()
 #if 'aberdeen'  in hostname.lower():
 #    sys.path.insert(1, '/scratch/git/nomad/')
-if 'laptop'  in hostname.lower():
-    sys.path.insert(1, '/data/git/nomad/')
-sys.path.insert(1, '/data/git/nomad/')
+#if 'laptop'  in hostname.lower():
+#    sys.path.insert(1, '/data/git/nomad/')
+#sys.path.insert(1, '/data/git/nomad/')
 
 from nomad.client import parse, normalize_all
 from Tools.PrepareUpload.workflow_eos_creator import parse_outcar,  create_eos_workflow, get_energies_from_list_outcars, run_normalize
