@@ -29,7 +29,9 @@ import pdb
 import shutil
 
 
-from ase.eos import EquationOfState as ASE_EOS
+from ase.eos import birchmurnaghan
+from scipy.optimize import curve_fit
+    
 
 from nomad.datamodel.results import Symmetry
 import json
@@ -50,18 +52,35 @@ def get_template_from_min_energy(list_of_outcars, list_of_energies, prototype_st
     return template_archive
 
 def make_eos_from_ev_curve(thevolumes : list, theenergies: list) -> EquationOfState:
-    equation_of_state_results = EquationOfStateResults(
-        volumes=thevolumes,
-        energies=theenergies
-        )
-    # numbers are unit conversion
-    equation_of_state = EquationOfState(equation_of_state_results)
-#    BM = ASE_EOS([ v *1e30  for v in thevolumes ],[ e * 6.241509e+18 for e in  theenergies ], eos='birchmurnaghan')
-#    v0, e0, B = BM.fit()
+    #    BM = ASE_EOS(
+    converted_volumes = [ ureg.convert(v,  'meter ** 3', 'angstrom ** 3')  for v in thevolumes ]
+    converted_energies  = [ ureg.convert(e, 'joule', 'eV')  for e in  theenergies ]
+    #        eos='birchmurnaghan')
+    minenergy_at = np.argmin(converted_energies)
+    p0 = [converted_energies[minenergy_at], 1, 1, converted_volumes[minenergy_at] ]
+    ( e0, B, BP, v0 ), _  = curve_fit(birchmurnaghan, converted_volumes, converted_energies, p0 = p0)
 #    eos_fit = equation_of_state.m_create(EOSFit)
 #    eos_fit.function_name = 'murnaghan'
 #    eos_fit.fitted_energies = theenergies
 #    eos_fit.bulk_modulus = B * 1e11
+    equation_of_state_results = EquationOfStateResults(
+        volumes=thevolumes,
+        energies=theenergies, 
+        )
+    # numbers are unit conversion
+    equation_of_state = EquationOfState(results = equation_of_state_results)
+    eos_fit = equation_of_state.results.m_create(EOSFit)
+
+    eos_fit.equilibrium_volume = ureg.convert(v0, 'angstrom ** 3', 'meter ** 3')
+    eos_fit.equilibrium_energy = ureg.convert(e0, 'eV', 'joule')
+    eos_fit.bulk_modulus = ureg.convert(B, 'GPa', 'Pa')
+    eos_fit.function_name = 'murnaghan'
+    fitted_energies = np.array([ birchmurnaghan(v, e0, B, BP, v0) for v in converted_volumes ])
+    rms = np.sqrt( np.sum(fitted_energies**2) )
+    fitted_energies_converted = [ ureg.convert(e, 'eV', 'joule') for e in fitted_energies ]
+    eos_fit.rms_error = ureg.convert(rms, 'eV', 'joule')
+    
+    eos_fit.fitted_energies = fitted_energies_converted
     return equation_of_state
 
 def make_reference_strings(list_of_outcars : list) -> list:
@@ -104,17 +123,20 @@ def create_eos_workflow(OUTCAR_dir : str, structure_name : str = None) -> EntryA
 #    templates = EntryArchive() #
     templates = get_template_from_min_energy(OUTCARS, list_of_energies)[0]
 #    templates.workflow = []
-    workflow = templates.m_create(Workflow)
+#    workflow = templates.m_create(Workflow)
     # EOS workflow
-    workflow.type = 'equation_of_state'
-#    workflow.equation_of_state = make_eos_from_ev_curve(list_of_volumes, list_of_energies)
-    templates.workflow2 = EquationOfState()#make_eos_from_ev_curve(list_of_volumes, list_of_energies)
-    templates.workflow2.results = EquationOfStateResults(energies=list_of_energies, volumes = list_of_volumes)
-#    normalized_workflow = run_normalize(templates)
-    archive_dict = templates.m_to_dict()
+#    workflow.type = 'equation_of_state'
+    templates.workflow2 = make_eos_from_ev_curve(list_of_volumes, list_of_energies)
+    #templates.workflow2 = EquationOfState(
+    #        results =EquationOfStateResults(
+    #            energies=list_of_energies,
+    #            volumes = list_of_volumes, 
+    #            )
+    #        )#make_eos_from_ev_curve(list_of_volumes, list_of_energies)
     list_of_reference_strings = make_reference_strings(OUTCARS) # [archive[0].run[0].calculation[0] for archive in list_of_archives]
-    pdb.set_trace()
-    archive_dict['workflow2'][-1]['calculations_ref'] = list_of_reference_strings
+    normalized_workflow = run_normalize(templates)
+    archive_dict = templates.m_to_dict()
+    archive_dict['workflow2']['results']['calculations_ref'] = list_of_reference_strings
     archive_dict['workflow2']['tasks'] = [
             {'name': f'point_{i}', 
                 'inputs' : [ {'name': 'Optimized Structure', 'section' : f'../upload/archive/mainfile/OUTCAR-0-RLX#/workflow2/tasks/{last_rlx_task}/outputs/1' } ], 
@@ -126,12 +148,11 @@ def create_eos_workflow(OUTCAR_dir : str, structure_name : str = None) -> EntryA
         'name': 'ev_curve', 
         'inputs': [{'name' : f'strained_{i}', 'section': f'../upload/archive/mainfile/{thisoutcar}#/run/0/calculation/'}  #/workflow2/tasks/0/outputs/0'}
             for i, thisoutcar  in enumerate(OUTCAR_BASENAMES)], 
-        'outputs' : [{'name': 'fitted ev curve', 'section' : '#/workflow2/outputs/0'}]
+        'outputs' : [{'name': 'fitted ev curve', 'section' : '#/workflow2/results/eos_fit'}]
         }]
-#    archive_dict['workflow2']['inputs'] =[ {'name': 'Optimized Structure', 'section' : '../upload/archive/mainfile/OUTCAR-0-RLX#/run/0/calculation/-1/system_ref'} ], 
     archive_dict['workflow2']['inputs'] = [{'name': 'Optimized Structure', 'section' : f'../upload/archive/mainfile/OUTCAR-0-RLX#/workflow2/tasks/{last_rlx_task}/outputs/1' }]
-
-    archive_dict['workflow2']['outputs'] = [{'name': 'eos_fit', 'section' : '#/workflow/equation_of_state/eos_fit/0/' }]
+#
+    archive_dict['workflow2']['outputs'] = [{'name': 'eos_fit', 'section' : '#/workflow2/results/eos_fit/' }]
     return archive_dict
 
 def get_energies_from_list_outcars(list_of_archives) -> list:
