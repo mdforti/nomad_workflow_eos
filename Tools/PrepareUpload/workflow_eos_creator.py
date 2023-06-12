@@ -87,7 +87,7 @@ def make_reference_strings(list_of_outcars : list) -> list:
     """
     takes a list of OUTCAR paths and build the list of calculation_reference for nomad workflow
     """
-    list_of_references = ['../upload/archive/mainfile/'+os.path.basename(outcar)+'#/run/calculation/0' for outcar in list_of_outcars]
+    list_of_references = ['../upload/archive/mainfile/'+os.path.basename(outcar)+'#/run/0/calculation/0' for outcar in list_of_outcars]
     return list_of_references
 
 def get_input_outcar(OUTCAR_dir: str) -> str:
