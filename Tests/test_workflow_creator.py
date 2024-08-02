@@ -18,8 +18,9 @@ from Tools.PrepareUpload.workflow_eos_creator import parse_outcar,  create_eos_w
 from nomad.utils import dump_json
 import glob
 
-first_outcar = 'ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/OUTCAR.1.000'
-#first_outcar = 'ExampleUpload/Fe_BCC.FM/bcc.FM/volume_relaxed/xc=PBE-PAW.E=500.dk=0.020/OUTCAR.0.95' 
+#first_outcar = 'ExampleUpload/R-AAAAAAAABBB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/OUTCAR.1.000'
+#first_outcar = 'ExampleUpload/sigma-AAABB/volume_relaxed/xc=PBE-PAW.E=450.dk=0.020/OUTCAR.1.000'
+first_outcar = 'ExampleUpload/Fe_BCC.FM/bcc.FM/volume_relaxed/xc=PBE-PAW.E=500.dk=0.020/OUTCAR.0.95' 
 outcars_dir = os.path.dirname(first_outcar)
 import unittest
 
