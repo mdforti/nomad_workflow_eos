@@ -1,0 +1,3 @@
+[submodule "nomad"]
+	path = nomad
+	url = git@github.com:mdforti/nomad.git
